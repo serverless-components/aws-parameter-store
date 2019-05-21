@@ -21,11 +21,11 @@ aws.config.update({
   retryDelayOptions: {
     customBackoff: (retryCount) => {
       if (retryCount < 5) {
-        return 100
+        return 250
       } else if (retryCount < 10) {
-        return 300
+        return 500
       }
-      return 500
+      return 1000
     }
   }
 })
