@@ -1,13 +1,13 @@
-const { map, propEq, concat, merge, splitEvery, pipe, flatten, find } = require('ramda')
+const { map, merge, splitEvery, flatten } = require('ramda')
 
 const previous = async ({ aws, parameters, region }) => {
   const ssm = new aws.SSM({ region })
   const chunkedParameters = splitEvery(10, parameters)
   return flatten(
     await Promise.all(
-      map(async (c) => {
+      map(async (parameterChunk) => {
         const { Parameters } = await ssm
-          .getParameters({ Names: map(({ name }) => name, c), WithDecryption: true })
+          .getParameters({ Names: map(({ name }) => name, parameterChunk), WithDecryption: true })
           .promise()
         return map(
           (parameter) => ({
@@ -34,16 +34,23 @@ const deploy = async ({ aws, parameter, region }) => {
       Overwrite: parameter.overwrite || true
     })
     .promise()
-  return merge(parameter, { version: Version })
+  const { Parameter } = await ssm.getParameter({ Name: parameter.name }).promise() // put parameter doesn't return arn...
+  return merge(parameter, { version: Version, arn: Parameter.ARN })
 }
 
 const remove = async ({ aws, parameters, region }) => {
   const ssm = new aws.SSM({ region })
-  return ssm
-    .deleteParameters({
-      Names: map(({ name }) => name, parameters)
-    })
-    .promise()
+  await Promise.all(
+    map(
+      async (parameterChunk) =>
+        ssm
+          .deleteParameters({
+            Names: map(({ name }) => name, parameterChunk)
+          })
+          .promise(),
+      splitEvery(10, parameters)
+    )
+  )
 }
 
 module.exports = {

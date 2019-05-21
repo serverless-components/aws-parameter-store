@@ -1,5 +1,17 @@
 const aws = require('aws-sdk')
-const { isEmpty, isNil, mergeDeepRight, merge, find, propEq, reduce, concat } = require('ramda')
+const {
+  isEmpty,
+  isNil,
+  mergeDeepRight,
+  merge,
+  find,
+  not,
+  propEq,
+  reduce,
+  map,
+  concat,
+  difference
+} = require('ramda')
 const { Component } = require('@serverless/components')
 
 const { changeSet, deployParameters, previousParameters, removeParameters } = require('./utils')
@@ -18,8 +30,6 @@ aws.config.update({
   }
 })
 
-const outputsList = ['parameters']
-
 const defaults = {
   parameters: [],
   region: 'us-east-1'
@@ -30,19 +40,19 @@ class AwsParameterStore extends Component {
     const config = mergeDeepRight(defaults, inputs)
     const previous = await previousParameters(merge(config, { aws }))
 
-    const orphans = changeSet({
-      currentParameters: this.state.parameters,
-      previousParameters: config.parameters
-    })
+    const orphanParameters = map(
+      (orphanName) => find(({ name }) => name === orphanName, this.state.parameters),
+      difference(
+        map(({ name }) => name, this.state.parameters || []),
+        map(({ name }) => name, config.parameters)
+      )
+    )
 
-    if (!isEmpty(orphans)) {
-      await removeParameters(merge(config, { aws, parameters: orphans }))
+    if (not(isEmpty(orphanParameters))) {
+      await removeParameters(merge(config, { aws, parameters: orphanParameters }))
     }
 
-    const changedParameters = changeSet({
-      currentParameters: config.parameters,
-      previousParameters: previous
-    })
+    const changedParameters = changeSet(config.parameters, previous)
 
     let deployedParameters = []
     if (!isEmpty(changedParameters)) {
@@ -51,7 +61,7 @@ class AwsParameterStore extends Component {
       )
     }
 
-    const updatedParams = reduce(
+    const updatedParameters = reduce(
       (acc, parameter) => {
         if (isNil(find(propEq('name', parameter.name), acc))) {
           acc.push(parameter)
@@ -61,9 +71,20 @@ class AwsParameterStore extends Component {
       [],
       concat(deployedParameters, previous)
     )
-    this.state.parameters = updatedParams
+
+    this.state.parameters = updatedParameters
     await this.save()
-    return {}
+    return reduce(
+      (acc, parameter) => {
+        acc[parameter.name] = {
+          arn: parameter.arn,
+          version: parameter.version
+        }
+        return acc
+      },
+      {},
+      updatedParameters
+    )
   }
 
   async remove(inputs = {}) {

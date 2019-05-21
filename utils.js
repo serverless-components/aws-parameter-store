@@ -21,25 +21,25 @@ const previousParameters = async ({ aws, parameters, region }) => {
     parameters: parametersByService(parameters).ssm,
     region
   })
-  const previousSecretsManager = [] //@TODO
+  const previousSecretsManager = [] // @TODO
   return concat(previousSsm, previousSecretsManager)
 }
 
-const changeSet = ({ currentParameters, previousParameters }) => {
+const changeSet = (parametersA, parametersB) => {
   return reduce(
-    (acc, parameter) => {
-      const previousParameter = find(propEq('name', parameter.name), previousParameters)
+    (acc, parameterA) => {
+      const parameterB = find(propEq('name', parameterA.name), parametersB)
       if (
-        isNil(previousParameter) ||
-        isNil(previousParameter.value) ||
-        not(equals(previousParameter.value, parameter.value))
+        isNil(parameterB) ||
+        isNil(parameterB.value) ||
+        not(equals(parameterB.value, parameterA.value))
       ) {
-        acc.push(parameter)
+        acc.push(parameterA)
       }
       return acc
     },
     [],
-    currentParameters
+    parametersA
   )
 }
 
@@ -49,7 +49,7 @@ const deployParameters = async ({ aws, parameters, region }) => {
       if (/^SSM\//.test(parameter.type)) {
         return ssm.deploy({ aws, parameter, region })
       } else if (/^SecretsManager\//.test(parameter.type)) {
-        console.log('SecretsManager')
+        //
       }
       return null
     }, parameters)
