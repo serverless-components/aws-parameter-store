@@ -29,16 +29,28 @@ class AwsParameterStore extends Component {
   async default(inputs = {}) {
     const config = mergeDeepRight(defaults, inputs)
     const previous = await previousParameters(merge(config, { aws }))
+
+    const orphans = changeSet({
+      currentParameters: this.state.parameters,
+      previousParameters: config.parameters
+    })
+
+    if (!isEmpty(orphans)) {
+      await removeParameters(merge(config, { aws, parameters: orphans }))
+    }
+
     const changedParameters = changeSet({
       currentParameters: config.parameters,
       previousParameters: previous
     })
+
     let deployedParameters = []
     if (!isEmpty(changedParameters)) {
       deployedParameters = await deployParameters(
         merge(config, { aws, parameters: changedParameters })
       )
     }
+
     const updatedParams = reduce(
       (acc, parameter) => {
         if (isNil(find(propEq('name', parameter.name), acc))) {
@@ -55,9 +67,7 @@ class AwsParameterStore extends Component {
   }
 
   async remove(inputs = {}) {
-    console.log(inputs)
     const config = mergeDeepRight(defaults, inputs, this.state)
-    console.log({ config })
     await removeParameters(merge(config, { aws }))
     this.state = {}
     await this.save()

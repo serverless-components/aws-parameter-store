@@ -39,9 +39,11 @@ const deploy = async ({ aws, parameter, region }) => {
 
 const remove = async ({ aws, parameters, region }) => {
   const ssm = new aws.SSM({ region })
-  return ssm.deleteParameters({
-    Names: map(({ name })=> name, parameters)
-  }).promise()
+  return ssm
+    .deleteParameters({
+      Names: map(({ name }) => name, parameters)
+    })
+    .promise()
 }
 
 module.exports = {
