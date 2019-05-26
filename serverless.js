@@ -17,16 +17,9 @@ const { Component } = require('@serverless/components')
 const { changeSet, deployParameters, previousParameters, removeParameters } = require('./utils')
 
 aws.config.update({
-  maxRetries: 50,
+  maxRetries: 15,
   retryDelayOptions: {
-    customBackoff: (retryCount) => {
-      if (retryCount < 5) {
-        return 250
-      } else if (retryCount < 10) {
-        return 500
-      }
-      return 1000
-    }
+    base: 300
   }
 })
 
