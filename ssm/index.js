@@ -24,18 +24,22 @@ const previous = async ({ aws, parameters, region }) => {
   )
 }
 
-const deploy = async ({ aws, parameter, region }) => {
+const deploy = async ({ aws, parameters, region }) => {
   const ssm = new aws.SSM({ region })
-  const { Version } = await ssm
-    .putParameter({
-      Name: parameter.name,
-      Value: parameter.value,
-      Type: parameter.type.replace(/^SSM\//, ''),
-      Overwrite: parameter.overwrite || true
-    })
-    .promise()
-  const { Parameter } = await ssm.getParameter({ Name: parameter.name }).promise() // put parameter doesn't return arn...
-  return merge(parameter, { version: Version, arn: Parameter.ARN })
+  return Promise.all(
+    map(async (parameter) => {
+      const { Version } = await ssm
+        .putParameter({
+          Name: parameter.name,
+          Value: parameter.value,
+          Type: parameter.AWSType,
+          Overwrite: parameter.overwrite || true
+        })
+        .promise()
+      const { Parameter } = await ssm.getParameter({ Name: parameter.name }).promise() // put parameter doesn't return arn...
+      return merge(parameter, { version: Version, arn: Parameter.ARN })
+    }, parameters)
+  )
 }
 
 const remove = async ({ aws, parameters, region }) => {

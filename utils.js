@@ -1,13 +1,16 @@
-const { map, isNil, equals, not, concat, find, reduce, propEq } = require('ramda')
+const { map, isNil, equals, not, concat, find, reduce, propEq, merge } = require('ramda')
 const ssm = require('./ssm')
+const secretsManager = require('./secrets-manager')
 
 const parametersByService = (parameters) =>
   reduce(
     (acc, parameter) => {
       if (/^SSM\//.test(parameter.type)) {
-        acc.ssm.push(parameter)
+        acc.ssm.push(merge(parameter, { AWSType: parameter.type.replace(/^SSM\//, '') }))
       } else if (/^SecretsManager\//.test(parameter.type)) {
-        acc.secretsManager.push(parameter)
+        acc.secretsManager.push(
+          merge(parameter, { AWSType: parameter.type.replace(/^SecretsManager\//, '') })
+        )
       }
       return acc
     },
@@ -16,12 +19,21 @@ const parametersByService = (parameters) =>
   )
 
 const previousParameters = async ({ aws, parameters, region }) => {
-  const previousSsm = await ssm.previous({
-    aws,
-    parameters: parametersByService(parameters).ssm,
-    region
-  })
-  const previousSecretsManager = [] // @TODO
+  const { ssm: ssmParameters, secretsManager: secretsManagerParameters } = parametersByService(
+    parameters
+  )
+  const [previousSsm, previousSecretsManager] = await Promise.all([
+    ssm.previous({
+      aws,
+      parameters: ssmParameters,
+      region
+    }),
+    secretsManager.previous({
+      aws,
+      parameters: secretsManagerParameters,
+      region
+    })
+  ])
   return concat(previousSsm, previousSecretsManager)
 }
 
@@ -34,7 +46,8 @@ const changeSet = (parametersA, parametersB) => {
         isNil(parameterB.value) ||
         not(equals(parameterB.value, parameterA.value))
       ) {
-        acc.push(parameterA)
+        const update = !!(parameterB && parameterB.value)
+        acc.push(merge(parameterA, { update }))
       }
       return acc
     },
@@ -44,16 +57,22 @@ const changeSet = (parametersA, parametersB) => {
 }
 
 const deployParameters = async ({ aws, parameters, region }) => {
-  return Promise.all(
-    map(async (parameter) => {
-      if (/^SSM\//.test(parameter.type)) {
-        return ssm.deploy({ aws, parameter, region })
-      } else if (/^SecretsManager\//.test(parameter.type)) {
-        //
-      }
-      return null
-    }, parameters)
+  const { ssm: ssmParameters, secretsManager: secretsManagerParameters } = parametersByService(
+    parameters
   )
+  const [deployedSsm, deployedSecretsManager] = await Promise.all([
+    ssm.deploy({
+      aws,
+      parameters: ssmParameters,
+      region
+    }),
+    secretsManager.deploy({
+      aws,
+      parameters: secretsManagerParameters,
+      region
+    })
+  ])
+  return concat(deployedSsm, deployedSecretsManager)
 }
 
 const removeParameters = async ({ aws, parameters, region }) => {
