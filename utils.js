@@ -40,7 +40,10 @@ const previousParameters = async ({ aws, parameters, region }) => {
 const changeSet = (parametersA, parametersB) => {
   return reduce(
     (acc, parameterA) => {
-      const parameterB = find(propEq('name', parameterA.name), parametersB)
+      let parameterB = null
+      try {
+        parameterB = find(propEq('name', parameterA.name), parametersB)
+      } catch (error) {}
       if (
         isNil(parameterB) ||
         isNil(parameterB.value) ||
@@ -76,11 +79,21 @@ const deployParameters = async ({ aws, parameters, region }) => {
 }
 
 const removeParameters = async ({ aws, parameters, region }) => {
-  await ssm.remove({
-    aws,
-    parameters: parametersByService(parameters).ssm,
-    region
-  })
+  const { ssm: ssmParameters, secretsManager: secretsManagerParameters } = parametersByService(
+    parameters
+  )
+  await Promise.all([
+    ssm.remove({
+      aws,
+      parameters: ssmParameters,
+      region
+    }),
+    secretsManager.remove({
+      aws,
+      parameters: secretsManagerParameters,
+      region
+    })
+  ])
 }
 
 module.exports = {

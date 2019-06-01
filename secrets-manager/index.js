@@ -24,7 +24,6 @@ const deploy = async ({ aws, parameters, region }) => {
   const secretsManager = new aws.SecretsManager({ region })
   return Promise.all(
     map(async (parameter) => {
-      console.log(parameter)
       let response
       if (not(parameter.update)) {
         response = await secretsManager
@@ -51,7 +50,21 @@ const deploy = async ({ aws, parameters, region }) => {
   )
 }
 
-const remove = async ({ aws, parameters, region }) => {}
+const remove = async ({ aws, parameters, region }) => {
+  const secretsManager = new aws.SecretsManager({ region })
+  await Promise.all(
+    map(
+      async (parameter) =>
+        secretsManager
+          .deleteSecret({
+            SecretId: parameter.name,
+            ForceDeleteWithoutRecovery: true // dev
+          })
+          .promise(),
+      parameters
+    )
+  )
+}
 
 module.exports = {
   previous,

@@ -56,7 +56,11 @@ class AwsParameterStore extends Component {
 
     const updatedParameters = reduce(
       (acc, parameter) => {
-        if (isNil(find(propEq('name', parameter.name), acc))) {
+        if (
+          !isNil(parameter) &&
+          !isNil(parameter.name) &&
+          isNil(find(propEq('name', parameter.name), acc))
+        ) {
           acc.push(parameter)
         }
         return acc
