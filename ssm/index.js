@@ -1,7 +1,6 @@
-const { map, merge, splitEvery, flatten } = require('ramda')
+const { map, merge, splitEvery, flatten, not, isNil, concat, find, equals } = require('ramda')
 
-const previous = async ({ aws, parameters, region }) => {
-  const ssm = new aws.SSM({ region })
+const getParameterValues = async ({ ssm, parameters }) => {
   const chunkedParameters = splitEvery(10, parameters)
   return flatten(
     await Promise.all(
@@ -24,6 +23,45 @@ const previous = async ({ aws, parameters, region }) => {
   )
 }
 
+const describeParameters = async ({ ssm, parameters }) => {
+  let previousParameters = []
+  let nextToken
+  do {
+    const response = await ssm
+      .describeParameters({
+        Filters: [
+          {
+            Key: 'Name',
+            Values: map(({ name }) => name, parameters)
+          }
+        ]
+      })
+      .promise()
+    nextToken = response.NextToken
+    previousParameters = concat(previousParameters, response.Parameters)
+  } while (not(isNil(nextToken)))
+  return previousParameters
+}
+
+const previous = async ({ aws, parameters, region }) => {
+  const ssm = new aws.SSM({ region })
+  const [previousParameterValues, previousParameters] = await Promise.all([
+    getParameterValues({ ssm, parameters }),
+    describeParameters({ ssm, parameters })
+  ])
+  return map((parameter) => {
+    const previousParameterValue = find(({ name }) => equals(parameter.Name, name))(
+      previousParameterValues
+    )
+    return merge(
+      {
+        kmsKey: parameter.KeyId
+      },
+      previousParameterValue
+    )
+  }, previousParameters)
+}
+
 const deploy = async ({ aws, parameters, region }) => {
   const ssm = new aws.SSM({ region })
   return Promise.all(
@@ -33,7 +71,8 @@ const deploy = async ({ aws, parameters, region }) => {
           Name: parameter.name,
           Value: parameter.value,
           Type: parameter.AWSType,
-          Overwrite: parameter.overwrite || true
+          Overwrite: parameter.overwrite || true,
+          KeyId: equals(parameter.AWSType, 'SecureString') ? parameter.kmsKey : undefined
         })
         .promise()
       const { Parameter } = await ssm.getParameter({ Name: parameter.name }).promise() // put parameter doesn't return arn...

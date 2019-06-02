@@ -1,4 +1,4 @@
-const { map, isNil, equals, not, concat, find, reduce, propEq, merge } = require('ramda')
+const { isNil, equals, not, concat, find, reduce, propEq, merge } = require('ramda')
 const ssm = require('./ssm')
 const secretsManager = require('./secrets-manager')
 
@@ -44,10 +44,12 @@ const changeSet = (parametersA, parametersB) => {
       try {
         parameterB = find(propEq('name', parameterA.name), parametersB)
       } catch (error) {}
+      // TODO, check all params
       if (
         isNil(parameterB) ||
         isNil(parameterB.value) ||
-        not(equals(parameterB.value, parameterA.value))
+        not(equals(parameterB.value, parameterA.value)) ||
+        not(equals(parameterB.kmsKey, parameterA.kmsKey))
       ) {
         const update = !!(parameterB && parameterB.value)
         acc.push(merge(parameterA, { update }))

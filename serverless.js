@@ -28,9 +28,26 @@ const defaults = {
   region: 'us-east-1'
 }
 
+const ssmDefaults = {
+  kmsKey: 'alias/aws/ssm'
+}
+
+const secretsManagerDefaults = {
+  kmsKey: 'alias/aws/secretsmanager'
+}
+
 class AwsParameterStore extends Component {
   async default(inputs = {}) {
     const config = mergeDeepRight(defaults, inputs)
+    config.parameters = map((parameter) => {
+      if (/^SSM\//.test(parameter.type)) {
+        return mergeDeepRight(ssmDefaults, parameter)
+      } else if (/^SecretsManager\//.test(parameter.type)) {
+        return mergeDeepRight(secretsManagerDefaults, parameter)
+      }
+      return parameter
+    }, config.parameters)
+
     const previous = await previousParameters(merge(config, { aws }))
 
     const orphanParameters = map(

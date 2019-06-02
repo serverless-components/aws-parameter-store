@@ -5,14 +5,24 @@ const previous = async ({ aws, parameters, region }) => {
   const secretValues = await Promise.all(
     map(async (parameter) => {
       try {
-        const response = await secretsManager.getSecretValue({ SecretId: parameter.name }).promise()
-        const value = response.SecretString || response.SecretBinary
+        const [
+          secretValueResponse,
+          describeSecretResponse,
+          resourcePolicyResponse
+        ] = await Promise.all([
+          secretsManager.getSecretValue({ SecretId: parameter.name }).promise(),
+          secretsManager.describeSecret({ SecretId: parameter.name }).promise(),
+          secretsManager.getResourcePolicy({ SecretId: parameter.name }).promise()
+        ])
+        const value = secretValueResponse.SecretString || secretValueResponse.SecretBinary
         return {
-          name: response.Name,
+          name: secretValueResponse.Name,
           value,
           type: parameter.type,
-          version: response.VersionId,
-          arn: response.ARN
+          version: secretValueResponse.VersionId,
+          arn: secretValueResponse.ARN,
+          kmsKey: describeSecretResponse.KmsKeyId,
+          resourcePolicy: resourcePolicyResponse.ResourcePolicy
         }
       } catch (error) {}
     }, parameters)
@@ -29,22 +39,35 @@ const deploy = async ({ aws, parameters, region }) => {
         response = await secretsManager
           .createSecret({
             Name: parameter.name,
-            [parameter.AWSType]: parameter.value
+            [parameter.AWSType]: parameter.value,
+            KmsKeyId: parameter.kmsKey
           })
           .promise()
       } else {
         response = await secretsManager
           .updateSecret({
             SecretId: parameter.name,
-            [parameter.AWSType]: parameter.value
+            [parameter.AWSType]: parameter.value,
+            KmsKeyId: parameter.kmsKey
           })
           .promise()
+      }
+      if (not(isNil(parameter.resourcePolicy))) {
+        await secretsManager
+          .putResourcePolicy({
+            SecretId: parameter.name,
+            ResourcePolicy: JSON.stringify(parameter.resourcePolicy)
+          })
+          .promise()
+      } else {
+        await secretsManager.deleteResourcePolicy({ SecretId: parameter.name }).promise()
       }
       return {
         name: parameter.name,
         value: parameter.value,
         arn: response.ARN,
-        version: response.VersionId
+        version: response.VersionId,
+        kmsKey: parameter.kmsKey
       }
     }, parameters)
   )
