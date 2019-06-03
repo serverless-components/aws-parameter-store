@@ -52,11 +52,12 @@ const deploy = async ({ aws, parameters, region }) => {
           })
           .promise()
       }
+      const resourcePolicy = JSON.stringify(parameter.resourcePolicy)
       if (not(isNil(parameter.resourcePolicy))) {
         await secretsManager
           .putResourcePolicy({
             SecretId: parameter.name,
-            ResourcePolicy: JSON.stringify(parameter.resourcePolicy)
+            ResourcePolicy: resourcePolicy
           })
           .promise()
       } else {
@@ -66,8 +67,10 @@ const deploy = async ({ aws, parameters, region }) => {
         name: parameter.name,
         value: parameter.value,
         arn: response.ARN,
+        type: parameter.type,
         version: response.VersionId,
-        kmsKey: parameter.kmsKey
+        kmsKey: parameter.kmsKey,
+        resourcePolicy
       }
     }, parameters)
   )
