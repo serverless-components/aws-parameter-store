@@ -81,7 +81,7 @@ const deploy = async ({ aws, parameters, region }) => {
         version: response.VersionId,
         kmsKey: parameter.kmsKey,
         description: parameter.description,
-        resourcePolicy
+        resourcePolicy: parameter.resourcePolicy
       }
     }, parameters)
   )
