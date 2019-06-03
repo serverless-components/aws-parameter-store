@@ -40,6 +40,9 @@ const setParameterDefaults = (parameters) => {
     kmsKey: 'alias/aws/secretsmanager'
   }
   return map((parameter) => {
+    if (isNil(parameter.name) || isNil(parameter.value) || isNil(parameter.type)) {
+      throw new Error('Invalid parameter: name, value, and type must be defined')
+    }
     if (/^SSM\//.test(parameter.type)) {
       // only if parameter.type === SSM/SecureString default key to kmsKey
       // needs to be refactored when more default values are added
