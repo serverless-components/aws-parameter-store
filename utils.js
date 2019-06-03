@@ -59,10 +59,16 @@ const changeSet = (parametersA, parametersB) => {
       const diffKeys = ['name', 'value', 'type', 'kmsKey', 'description', 'resourcePolicy']
       const diffA = pick(diffKeys, parameterA)
       const diffB = not(isNil(parameterB)) ? pick(diffKeys, parameterB) : undefined
+
+      // SecretBinary diff
+      if (diffA.type === 'SecretsManager/SecretBinary') {
+        diffA.value = Buffer.from(diffA.value)
+        diffB.value = Buffer.from(diffB.value)
+      }
+
       const diff = filter((key) => {
         return isNil(diffB) || not(equals(diffA[key], diffB[key]))
       })(diffKeys)
-
       if (!isEmpty(diff)) {
         const update = !!diffB
         acc.push(merge(parameterA, { update, diff }))
