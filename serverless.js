@@ -105,7 +105,9 @@ class AwsParameterStore extends Component {
     return pipe(
       sort((a, b) => (a.name < b.name ? -1 : 1)),
       reduce((acc, parameter) => {
-        acc[parameter.name] = {
+        const sanitizedParameterName = parameter.name.replace(/^\//, '').replace(/\//g, '_')
+        acc[sanitizedParameterName] = {
+          name: parameter.name,
           arn: parameter.arn,
           version: parameter.version
         }

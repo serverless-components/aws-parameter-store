@@ -49,16 +49,28 @@ myParameters:
   component: '@serverless/aws-parameter-store'
   inputs:
     parameters:
-      - name: /my/parameter/name
-        value: '000000'
-        type: AWS/SSM/SecureString # something like this
-      - name: parameter-name
-        value: just-a-string
-        type: AWS/SSM/String  # something like this
-      - name: pg_password
-        value: 'secret'
-        type: AWS/SecretsManager  # something like this
-        # + whatever parameters are needed, KMS id etc.
+      - name: /my/credentials/username
+        value: 'bob'
+        type: SSM/String
+        description: my username # optional
+      - name: /my/credentials/password
+        value: 'abc123xyz456'
+        type: SSM/SecureString
+        kmsKey: arn:aws:kms:us-east-1:123456789012:key/a67b9750-235a-432b-99e4-6c59516d4f07 # optional
+        description: my password # optional
+      - name: my_credentials
+        value: '{"username":"bob", "password":"abc123xyz456"}'
+        type: SecretsManager/SecretString
+        kmsKey: arn:aws:kms:us-east-1:123456789012:key/a67b9750-235a-432b-99e4-6c59516d4f07 # optional
+        description: my credentials # optional
+        resourcePolicy: # optional
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Principal:
+              AWS: arn:aws:iam::123456789012:root
+            Action: secretsmanager:GetSecretValue
+            Resource: "*"
 ```
 
 ### 4. Deploy
@@ -67,7 +79,18 @@ myParameters:
 AwsParameterStore (master)$ components
 
   AwsParameterStore › outputs:
-  pg_password_arn:  'arn:aws:....'
+  my_credentials_password:
+    name:  '/my/credentials/password'
+    arn:  'arn:aws:ssm:us-east-1:123456789012:parameter/my/credentials/password'
+    version:  1
+  my_credentials_username:
+    name:  '/my/credentials/username'
+    arn:  'arn:aws:ssm:us-east-1:123456789012:parameter/my/credentials/username'
+    version:  1
+  my_credentials:
+    name:  'my_credentials'
+    arn:  'arn:aws:secretsmanager:us-east-1:123456789012:secret:my_credentials-fxdLpu'
+    version:  'add085ab-3dd4-48e2-9232-11e521e1da57'
 
 
   4s › dev › AwsParameterStore › done
