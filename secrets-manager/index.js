@@ -22,7 +22,8 @@ const previous = async ({ aws, parameters, region }) => {
           version: secretValueResponse.VersionId,
           arn: secretValueResponse.ARN,
           kmsKey: describeSecretResponse.KmsKeyId,
-          resourcePolicy: resourcePolicyResponse.ResourcePolicy
+          resourcePolicy: resourcePolicyResponse.ResourcePolicy,
+          description: describeSecretResponse.Description
         }
       } catch (error) {}
     }, parameters)
@@ -48,7 +49,8 @@ const deploy = async ({ aws, parameters, region }) => {
           .updateSecret({
             SecretId: parameter.name,
             [parameter.AWSType]: parameter.value,
-            KmsKeyId: parameter.kmsKey
+            KmsKeyId: parameter.kmsKey,
+            Description: parameter.description
           })
           .promise()
       }
@@ -70,6 +72,7 @@ const deploy = async ({ aws, parameters, region }) => {
         type: parameter.type,
         version: response.VersionId,
         kmsKey: parameter.kmsKey,
+        description: parameter.description,
         resourcePolicy
       }
     }, parameters)
