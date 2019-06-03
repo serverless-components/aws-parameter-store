@@ -1,4 +1,4 @@
-const { map, merge, splitEvery, flatten, not, isNil } = require('ramda')
+const { map, merge, splitEvery, flatten, not, isNil, includes } = require('ramda')
 
 const previous = async ({ aws, parameters, region }) => {
   const secretsManager = new aws.SecretsManager({ region })
@@ -22,7 +22,9 @@ const previous = async ({ aws, parameters, region }) => {
           version: secretValueResponse.VersionId,
           arn: secretValueResponse.ARN,
           kmsKey: describeSecretResponse.KmsKeyId,
-          resourcePolicy: resourcePolicyResponse.ResourcePolicy,
+          resourcePolicy: resourcePolicyResponse.ResourcePolicy
+            ? JSON.parse(resourcePolicyResponse.ResourcePolicy)
+            : undefined,
           description: describeSecretResponse.Description
         }
       } catch (error) {}
@@ -54,17 +56,23 @@ const deploy = async ({ aws, parameters, region }) => {
           })
           .promise()
       }
-      const resourcePolicy = JSON.stringify(parameter.resourcePolicy)
-      if (not(isNil(parameter.resourcePolicy))) {
-        await secretsManager
-          .putResourcePolicy({
-            SecretId: parameter.name,
-            ResourcePolicy: resourcePolicy
-          })
-          .promise()
-      } else {
-        await secretsManager.deleteResourcePolicy({ SecretId: parameter.name }).promise()
+      if (not(isNil(parameter.diff)) && includes('resourcePolicy', parameter.diff)) {
+        if (isNil(parameter.resourcePolicy)) {
+          await secretsManager
+            .deleteResourcePolicy({
+              SecretId: parameter.name
+            })
+            .promise()
+        } else {
+          await secretsManager
+            .putResourcePolicy({
+              SecretId: parameter.name,
+              ResourcePolicy: JSON.stringify(parameter.resourcePolicy)
+            })
+            .promise()
+        }
       }
+
       return {
         name: parameter.name,
         value: parameter.value,

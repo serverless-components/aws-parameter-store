@@ -1,12 +1,12 @@
-const { map, merge, splitEvery, flatten, not, isNil, concat, find, equals } = require('ramda')
+const { concat, equals, find, flatten, isNil, map, merge, not, pick, splitEvery } = require('ramda')
 
-const getParameterValues = async ({ ssm, parameters }) => {
-  const chunkedParameters = splitEvery(10, parameters)
-  return flatten(
+const getParameterValues = async ({ ssm, parameters }) =>
+  flatten(
     await Promise.all(
-      map(async (parameterChunk) => {
+      map(async (chunkedParameters) => {
+        const names = map(({ name }) => name, chunkedParameters)
         const { Parameters } = await ssm
-          .getParameters({ Names: map(({ name }) => name, parameterChunk), WithDecryption: true })
+          .getParameters({ Names: names, WithDecryption: true })
           .promise()
         return map(
           (parameter) => ({
@@ -18,21 +18,22 @@ const getParameterValues = async ({ ssm, parameters }) => {
           }),
           Parameters
         )
-      }, chunkedParameters)
+      }, splitEvery(10, parameters))
     )
   )
-}
 
 const describeParameters = async ({ ssm, parameters }) => {
+  const names = map(({ name }) => name, parameters)
   let previousParameters = []
   let nextToken
   do {
     const response = await ssm
       .describeParameters({
-        Filters: [
+        ParameterFilters: [
           {
             Key: 'Name',
-            Values: map(({ name }) => name, parameters)
+            Option: 'Equals',
+            Values: names
           }
         ]
       })
@@ -78,7 +79,10 @@ const deploy = async ({ aws, parameters, region }) => {
         })
         .promise()
       const { Parameter } = await ssm.getParameter({ Name: parameter.name }).promise() // put parameter doesn't return arn...
-      return merge(parameter, { version: Version, arn: Parameter.ARN })
+      return pick(
+        ['name', 'value', 'type', 'kmsKey', 'description', 'version', 'arn'],
+        merge(parameter, { version: Version, arn: Parameter.ARN })
+      )
     }, parameters)
   )
 }

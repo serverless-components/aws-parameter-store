@@ -10,8 +10,10 @@ const {
   merge,
   mergeDeepRight,
   not,
+  pipe,
   propEq,
-  reduce
+  reduce,
+  sort
 } = require('ramda')
 const { Component } = require('@serverless/components')
 
@@ -97,17 +99,16 @@ class AwsParameterStore extends Component {
 
     this.state.parameters = updatedParameters
     await this.save()
-    return reduce(
-      (acc, parameter) => {
+    return pipe(
+      sort((a, b) => (a.name < b.name ? -1 : 1)),
+      reduce((acc, parameter) => {
         acc[parameter.name] = {
           arn: parameter.arn,
           version: parameter.version
         }
         return acc
-      },
-      {},
-      updatedParameters
-    )
+      }, {})
+    )(updatedParameters)
   }
 
   async remove(inputs = {}) {
