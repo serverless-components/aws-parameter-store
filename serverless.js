@@ -34,6 +34,9 @@ const defaults = {
 
 const setParameterDefaults = (parameters) => {
   const ssmDefaults = {
+    tier: 'Standard'
+  }
+  const ssmSecureStringDefaults = {
     kmsKey: 'alias/aws/ssm'
   }
   const secretsManagerDefaults = {
@@ -46,9 +49,10 @@ const setParameterDefaults = (parameters) => {
     if (/^SSM\//.test(parameter.type)) {
       // only if parameter.type === SSM/SecureString default key to kmsKey
       // needs to be refactored when more default values are added
+      const defaultSsmParameter = mergeDeepRight(ssmDefaults, parameter)
       return mergeDeepRight(
-        equals(parameter.type, 'SSM/SecureString') ? ssmDefaults : {},
-        parameter
+        equals(parameter.type, 'SSM/SecureString') ? ssmSecureStringDefaults : {},
+        defaultSsmParameter
       )
     } else if (/^SecretsManager\//.test(parameter.type)) {
       return mergeDeepRight(secretsManagerDefaults, parameter)

@@ -56,7 +56,7 @@ const changeSet = (parametersA, parametersB) => {
       try {
         parameterB = find(propEq('name', parameterA.name), parametersB)
       } catch (error) {}
-      const diffKeys = ['name', 'value', 'type', 'kmsKey', 'description', 'resourcePolicy']
+      const diffKeys = ['name', 'value', 'type', 'kmsKey', 'description', 'resourcePolicy', 'tier']
       const diffA = pick(diffKeys, parameterA)
       const diffB = not(isNil(parameterB)) ? pick(diffKeys, parameterB) : undefined
 

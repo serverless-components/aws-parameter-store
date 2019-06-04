@@ -58,6 +58,7 @@ myParameters:
         type: SSM/SecureString
         kmsKey: arn:aws:kms:us-east-1:123456789012:key/a67b9750-235a-432b-99e4-6c59516d4f07 # optional
         description: my password # optional
+        tier: Standard # optional
       - name: my_credentials
         value: '{"username":"bob", "password":"abc123xyz456"}'
         type: SecretsManager/SecretString

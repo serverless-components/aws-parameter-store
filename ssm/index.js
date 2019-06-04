@@ -57,7 +57,8 @@ const previous = async ({ aws, parameters, region }) => {
     return merge(
       {
         kmsKey: parameter.KeyId,
-        description: parameter.Description
+        description: parameter.Description,
+        tier: parameter.Tier
       },
       previousParameterValue
     )
@@ -75,12 +76,13 @@ const deploy = async ({ aws, parameters, region }) => {
           Type: parameter.AWSType,
           Overwrite: parameter.overwrite || true,
           KeyId: equals(parameter.AWSType, 'SecureString') ? parameter.kmsKey : undefined,
-          Description: parameter.description
+          Description: parameter.description,
+          Tier: parameter.tier
         })
         .promise()
       const { Parameter } = await ssm.getParameter({ Name: parameter.name }).promise() // put parameter doesn't return arn...
       return pick(
-        ['name', 'value', 'type', 'kmsKey', 'description', 'version', 'arn'],
+        ['name', 'value', 'type', 'kmsKey', 'description', 'version', 'arn', 'tier'],
         merge(parameter, { version: Version, arn: Parameter.ARN })
       )
     }, parameters)
