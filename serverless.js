@@ -4,6 +4,7 @@ const {
   difference,
   equals,
   find,
+  forEach,
   isEmpty,
   isNil,
   map,
@@ -13,7 +14,8 @@ const {
   pipe,
   propEq,
   reduce,
-  sort
+  sort,
+  toPairs
 } = require('ramda')
 const { Component } = require('@serverless/components')
 
@@ -66,6 +68,8 @@ class AwsParameterStore extends Component {
     const config = mergeDeepRight(defaults, inputs)
     config.parameters = setParameterDefaults(config.parameters)
 
+    this.ui.status(`Deploying`)
+
     const previous = await previousParameters(merge(config, { aws }))
 
     const orphanParameters = map(
@@ -77,6 +81,7 @@ class AwsParameterStore extends Component {
     )
 
     if (not(isEmpty(orphanParameters))) {
+      this.ui.status(`Removing deleted parameters`)
       await removeParameters(merge(config, { aws, parameters: orphanParameters }))
     }
 
@@ -84,6 +89,7 @@ class AwsParameterStore extends Component {
 
     let deployedParameters = []
     if (!isEmpty(changedParameters)) {
+      this.ui.status(`Deploying parameters`)
       deployedParameters = await deployParameters(
         merge(config, { aws, parameters: changedParameters })
       )
@@ -106,7 +112,8 @@ class AwsParameterStore extends Component {
 
     this.state.parameters = updatedParameters
     await this.save()
-    return pipe(
+
+    const outputs = pipe(
       sort((a, b) => (a.name < b.name ? -1 : 1)),
       reduce((acc, parameter) => {
         const sanitizedParameterName = parameter.name.replace(/^\//, '').replace(/\//g, '_')
@@ -118,10 +125,20 @@ class AwsParameterStore extends Component {
         return acc
       }, {})
     )(updatedParameters)
+
+    this.ui.log()
+    forEach(([key, { name, arn, version }]) => {
+      this.ui.output(`${key}.name`, name)
+      this.ui.output(`${key}.arn`, arn)
+      this.ui.output(`${key}.version`, version)
+    }, toPairs(outputs))
+
+    return outputs
   }
 
   async remove(inputs = {}) {
     const config = mergeDeepRight(defaults, inputs, this.state)
+    this.ui.status(`Removing`)
     await removeParameters(merge(config, { aws }))
     this.state = {}
     await this.save()
