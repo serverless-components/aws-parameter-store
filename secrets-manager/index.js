@@ -1,4 +1,4 @@
-const { equals, map, is, not, isNil, includes } = require('ramda')
+const { includes, isNil, map, not } = require('ramda')
 
 const previous = async ({ aws, parameters, region }) => {
   const secretsManager = new aws.SecretsManager({ region })
