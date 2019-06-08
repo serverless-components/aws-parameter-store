@@ -128,9 +128,9 @@ class AwsParameterStore extends Component {
 
     this.ui.log()
     forEach(([key, { name, arn, version }]) => {
-      this.ui.output(`${key}.name`, name)
-      this.ui.output(`${key}.arn`, arn)
-      this.ui.output(`${key}.version`, version)
+      this.ui.output(`${key}.name`, `   ${name}`)
+      this.ui.output(`${key}.arn`, `    ${arn}`)
+      this.ui.output(`${key}.version`, `${version}`)
     }, toPairs(outputs))
 
     return outputs

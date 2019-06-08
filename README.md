@@ -80,19 +80,15 @@ myParameters:
 AwsParameterStore (master)$ components
 
   AwsParameterStore › outputs:
-  my_credentials_password:
-    name:  '/my/credentials/password'
-    arn:  'arn:aws:ssm:us-east-1:123456789012:parameter/my/credentials/password'
-    version:  1
-  my_credentials_username:
-    name:  '/my/credentials/username'
-    arn:  'arn:aws:ssm:us-east-1:123456789012:parameter/my/credentials/username'
-    version:  1
-  my_credentials:
-    name:  'my_credentials'
-    arn:  'arn:aws:secretsmanager:us-east-1:123456789012:secret:my_credentials-fxdLpu'
-    version:  'add085ab-3dd4-48e2-9232-11e521e1da57'
-
+  my_credentials_password.name:    /my/credentials/password
+  my_credentials_password.arn:     arn:aws:ssm:us-east-1:123456789012:parameter/my/credentials/password
+  my_credentials_password.version: 1
+  my_credentials_username.name:    /my/credentials/username
+  my_credentials_username.arn:     arn:aws:ssm:us-east-1:123456789012:parameter/my/credentials/username
+  my_credentials_username.version: 1
+  my_credentials.name:    my_credentials
+  my_credentials.arn:     arn:aws:secretsmanager:us-east-1:123456789012:secret:my_credentials-fxdLpu
+  my_credentials.version: add085ab-3dd4-48e2-9232-11e521e1da57
 
   4s › dev › AwsParameterStore › done
 
