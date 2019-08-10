@@ -17,7 +17,7 @@ const {
   sort,
   toPairs
 } = require('ramda')
-const { Component } = require('@serverless/components')
+const { Component } = require('@serverless/core')
 
 const { changeSet, deployParameters, previousParameters, removeParameters } = require('./utils')
 
