@@ -4,7 +4,6 @@ const {
   difference,
   equals,
   find,
-  forEach,
   isEmpty,
   isNil,
   map,
@@ -14,10 +13,9 @@ const {
   pipe,
   propEq,
   reduce,
-  sort,
-  toPairs
+  sort
 } = require('ramda')
-const { Component } = require('@serverless/components')
+const { Component } = require('@serverless/core')
 
 const { changeSet, deployParameters, previousParameters, removeParameters } = require('./utils')
 
@@ -68,7 +66,7 @@ class AwsParameterStore extends Component {
     const config = mergeDeepRight(defaults, inputs)
     config.parameters = setParameterDefaults(config.parameters)
 
-    this.ui.status(`Deploying`)
+    this.context.status(`Deploying`)
 
     const previous = await previousParameters(merge(config, { aws }))
 
@@ -81,7 +79,7 @@ class AwsParameterStore extends Component {
     )
 
     if (not(isEmpty(orphanParameters))) {
-      this.ui.status(`Removing deleted parameters`)
+      this.context.debug(`Removing deleted parameters`)
       await removeParameters(merge(config, { aws, parameters: orphanParameters }))
     }
 
@@ -89,7 +87,7 @@ class AwsParameterStore extends Component {
 
     let deployedParameters = []
     if (!isEmpty(changedParameters)) {
-      this.ui.status(`Deploying parameters`)
+      this.context.debug(`Deploying parameters.`)
       deployedParameters = await deployParameters(
         merge(config, { aws, parameters: changedParameters })
       )
@@ -125,20 +123,12 @@ class AwsParameterStore extends Component {
         return acc
       }, {})
     )(updatedParameters)
-
-    this.ui.log()
-    forEach(([key, { name, arn, version }]) => {
-      this.ui.output(`${key}.name`, `   ${name}`)
-      this.ui.output(`${key}.arn`, `    ${arn}`)
-      this.ui.output(`${key}.version`, `${version}`)
-    }, toPairs(outputs))
-
     return outputs
   }
 
   async remove(inputs = {}) {
     const config = mergeDeepRight(defaults, inputs, this.state)
-    this.ui.status(`Removing`)
+    this.context.status(`Removing`)
     await removeParameters(merge(config, { aws }))
     this.state = {}
     await this.save()
