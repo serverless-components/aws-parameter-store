@@ -24,24 +24,29 @@ const getParameterValues = async ({ ssm, parameters }) =>
 
 const describeParameters = async ({ ssm, parameters }) => {
   const names = map(({ name }) => name, parameters)
-  let previousParameters = []
-  let nextToken
-  do {
-    const response = await ssm
-      .describeParameters({
-        ParameterFilters: [
-          {
-            Key: 'Name',
-            Option: 'Equals',
-            Values: names
-          }
-        ]
-      })
-      .promise()
-    nextToken = response.NextToken
-    previousParameters = concat(previousParameters, response.Parameters)
-  } while (not(isNil(nextToken)))
-  return previousParameters
+  const chunkedPreviousParameters = await Promise.all(
+    map(async (namesChunk) => {
+      let previousParameters = []
+      let nextToken
+      do {
+        const response = await ssm
+          .describeParameters({
+            ParameterFilters: [
+              {
+                Key: 'Name',
+                Option: 'Equals',
+                Values: namesChunk
+              }
+            ]
+          })
+          .promise()
+        nextToken = response.NextToken
+        previousParameters = concat(previousParameters, response.Parameters)
+      } while (not(isNil(nextToken)))
+      return previousParameters
+    }, splitEvery(50, names))
+  )
+  return flatten(chunkedPreviousParameters)
 }
 
 const previous = async ({ aws, parameters, region }) => {
