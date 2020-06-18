@@ -57,7 +57,7 @@ Example:
 }
 ```
 
-Parameter store variables are accessed in other components using the variable `output:` syntax: ${output:[stage]:[org]:[parameter store component name].[parameter name]}`.
+Parameter store variables are accessed in other components using the variable `output:` syntax: `${output:[stage]:[org]:[parameter store component name].[parameter name]}`.
 
 Example:
 
