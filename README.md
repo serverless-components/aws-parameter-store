@@ -1,83 +1,75 @@
-# AWS Parameter Store
+[![Serverless Components](https://s3.amazonaws.com/public.assets.serverless.com/images/readme_serverless_components.gif)](http://serverless.com)
 
-Easily Manage Secrets on AWS using [Serverless Components](https://github.com/serverless/components).
+<br/>
+
+**AWS Parameter Store** ⎯⎯⎯ Easily access your AWS parameter store values in components, powered by [Serverless Components](https://github.com/serverless/components/tree/cloud).
+
+<br/>
+
+1. [**Configure**](#1-configure)
+2. [**Deploy**](#2-deploy)
+3. [**Use**](#3-use)
 
 &nbsp;
 
-- [AWS Parameter Store](#aws-parameter-store)
-    - [1. Install](#1-install)
-    - [2. Create](#2-create)
-    - [3. Configure](#3-configure)
-    - [4. Deploy](#4-deploy)
-    - [New to Components?](#new-to-components)
+### 1. Configure
 
-&nbsp;
+The `aws-parameter-store` component allows you to specify the String/SecureString parameters your components need access to. The parameters are made available as outputs from the component and can be referenced by name.
 
-
-### 1. Install
-
-```console
-$ npm install -g serverless
-```
-
-### 2. Create
-
-Just create a `serverless.yml` file
-
-```shell
-$ touch serverless.yml
-$ touch .env      # your development AWS api keys
-$ touch .env.prod # your production AWS api keys
-```
-
-the `.env` files are not required if you have the aws keys set globally and you want to use a single stage, but they should look like this.
-
-```
-AWS_ACCESS_KEY_ID=XXX
-AWS_SECRET_ACCESS_KEY=XXX
-```
-
-### 3. Configure
+Here's a complete reference of the `serverless.yml` file:
 
 ```yml
-# serverless.yml
+component: aws-parameter-store   # (required) name of the component. In that case, it's aws-lambda.
+name: myParameters               # (required) name of your component instance.
+org: myOrg                       # (optional) serverless dashboard org. default is the first org you created during signup.
+app: myApp                       # (optional) serverless dashboard app. default is the same as the name property.
+stage: dev                       # (optional) serverless dashboard stage. default is dev.
 
-name: my-service
-stage: dev
-
-myParameters:
-  component: '@serverless/aws-parameter-store'
-  inputs:
-    parameters:
-      - name: /my/credentials/username
-        value: 'bob'
-        type: SSM/String
-        description: my username # optional
-      - name: /my/credentials/password
-        value: 'abc123xyz456'
-        type: SSM/SecureString
-        kmsKey: arn:aws:kms:us-east-1:123456789012:key/a67b9750-235a-432b-99e4-6c59516d4f07 # optional
-        description: my password # optional
-        tier: Standard # optional
-      - name: my_credentials
-        value: '{"username":"bob", "password":"abc123xyz456"}'
-        type: SecretsManager/SecretString
-        kmsKey: arn:aws:kms:us-east-1:123456789012:key/a67b9750-235a-432b-99e4-6c59516d4f07 # optional
-        description: my credentials # optional
-        resourcePolicy: # optional
-          Version: '2012-10-17'
-          Statement:
-          - Effect: Allow
-            Principal:
-              AWS: arn:aws:iam::123456789012:root
-            Action: secretsmanager:GetSecretValue
-            Resource: "*"
+inputs:
+  parameters:
+    - name: parameterFoo         # name of the parameter in parameter store
+      path: /parameter/path      # path prefix for the variable
+    - name: parameterBar
+      path: /parameter/path
+  region: us-east-2              # (optional) aws region to deploy to. default is us-east-1.
 ```
 
-### 4. Deploy
+### 2. Deploy
 
-```console
-$ serverless
+Run `serverless deploy` to deploy (or simply just `serverless`). This will read the parameter store values and make them available to other components as output variables.
+
+### 3. Use
+
+Output parameters are structured like:
+
+```
+{
+  [parameter name]: [parameter value]
+}
+```
+
+Example:
+
+```json
+{
+  "parameterFoo": "some value",
+  "parameterBar": "another value"
+}
+```
+
+Parameter store variables are accessed in other components using the variable `output:` syntax: ${output:[stage]:[org]:[parameter store component name].[parameter name]}`.
+
+Example:
+
+```yml
+component: example-component
+name: exampleName
+org: myOrg
+app: myApp
+stage: dev
+
+inputs:
+  someInput: ${output:dev:myOrg:myParameters.parameterBar}
 ```
 
 ### New to Components?
