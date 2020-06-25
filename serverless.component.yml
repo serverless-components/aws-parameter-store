@@ -1,7 +1,7 @@
 name: aws-parameter-store
-version: 1.0.4
+version: 1.0.5
 author: Scott Rippee
-org: serverlessinc
+org: agrian
 description: Allows parameters to be read from parameter store
 keywords: aws, serverless, parameter store
 repo: https://github.com/serverless-components/aws-parameter-store
