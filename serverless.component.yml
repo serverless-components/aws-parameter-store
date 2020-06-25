@@ -1,5 +1,5 @@
 name: aws-parameter-store
-version: 1.0.5
+version: 1.0.6
 author: Scott Rippee
 org: agrian
 description: Allows parameters to be read from parameter store
