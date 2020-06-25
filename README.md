@@ -19,7 +19,7 @@ The `aws-parameter-store` component allows you to specify the String/SecureStrin
 Here's a complete reference of the `serverless.yml` file:
 
 ```yml
-component: aws-parameter-store   # (required) name of the component. In that case, it's aws-lambda.
+component: aws-parameter-store   # (required) name of the component.
 name: myParameters               # (required) name of your component instance.
 org: myOrg                       # (optional) serverless dashboard org. default is the first org you created during signup.
 app: myApp                       # (optional) serverless dashboard app. default is the same as the name property.
