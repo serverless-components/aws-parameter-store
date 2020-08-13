@@ -31,7 +31,14 @@ class AwsParameterStore extends Component {
     return P.pipe([
       // [{ parameter name: value }, { parameter name: value }]
       P.map(async (parameter) => {
-        const key = R.join('/', [parameter.path, parameter.name])
+        const path = R.pipe (
+          R.when (R.isNil, R.always ('')),
+          R.when (
+            R.compose (R.equals ('/'), R.last),
+            R.init
+          ),
+        ) (parameter.path)
+        const key = R.join('/', [path, parameter.name])
         console.log(`Parameter store: Resolving variable: ${key}`)
         const value = await parameterStore.getValue(ssm, key)
         console.log(`Parameter store: Resolved: ${key}: ${value}`)
