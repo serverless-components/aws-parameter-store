@@ -27,18 +27,21 @@ class AwsParameterStore extends Component {
     })
 
     console.log('Parameter store: Resolving parameters.')
-    // [{ name: parameter name, path: ssm parameter store path prefix }]
+
+    const mapIndexed = R.addIndex (P.map);
+    // [{ name: output key name, path: ssm parameter store path }]
     return P.pipe([
-      // [{ parameter name: value }, { parameter name: value }]
-      P.map(async (parameter) => {
-        const path = R.pipe (
-          R.when (R.isNil, R.always ('')),
-          R.when (
-            R.compose (R.equals ('/'), R.last),
-            R.init
-          ),
-        ) (parameter.path)
-        const key = R.join('/', [path, parameter.name])
+      // [{ name: output key name, path: ssm parameter store path }]
+      mapIndexed(async (parameter, index) => {
+        if (R.either (R.isNil, R.isEmpty) (parameter.name)) {
+          const msg = `name for path ${parameter.path} at index ${index} must not be null, or empty.`
+          throw new Error(msg)
+        }
+        if (R.either (R.isNil, R.isEmpty) (parameter.path)) {
+          const msg = `path for name ${parameter.name} at index ${index} must not be null, or empty.`
+          throw new Error(msg)
+        }
+        const key = parameter.path
         console.log(`Parameter store: Resolving variable: ${key}`)
         const value = await parameterStore.getValue(ssm, key)
         console.log(`Parameter store: Resolved: ${key}: ${value}`)

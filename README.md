@@ -27,10 +27,10 @@ stage: dev                       # (optional) serverless dashboard stage. defaul
 
 inputs:
   parameters:
-    - name: parameterFoo         # name of the parameter in parameter store
-      path: /parameter/path      # path prefix for the variable
+    - name: parameterFoo         # name of the output key -- parameter name
+      path: /path/parameter      # fully qualified path to the parameter in parameter store -- parameter value
     - name: parameterBar
-      path: /parameter/path
+      path: /path/parameter
   region: us-east-2              # (optional) aws region to deploy to. default is us-east-1.
 ```
 
